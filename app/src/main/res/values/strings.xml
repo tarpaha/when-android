@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">When</string>
+    <string name="request">Request</string>
+    <string name="answer">Answer</string>
+</resources>
