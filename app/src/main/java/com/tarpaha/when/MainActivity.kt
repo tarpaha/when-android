@@ -8,6 +8,7 @@ import android.widget.EditText
 import android.widget.TextView
 import com.android.volley.Request
 import com.android.volley.Response
+import com.android.volley.VolleyError
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import org.json.JSONObject
@@ -31,36 +32,39 @@ class MainActivity : AppCompatActivity() {
         val url = "https://risboo6909.org/when/get_unix?input=" + Uri.encode(editTextRequest.text.toString());
 
         val stringRequest = JsonObjectRequest(Request.Method.GET, url, null,
-            Response.Listener<JSONObject> { json ->
-                val result = json.optJSONObject("result")
-                if(result == null) {
-                    showResult("Wrong response from server, no result", json)
-                } else {
-                    val error = result.optJSONObject("Err")
-                    if(error != null) {
-                        showResult("Parser error, invalid input data", json)
-                    } else {
-                        val ok = result.optJSONArray("Ok");
-                        if(ok == null) {
-                            showResult("Wrong response from server, neither Ok or Err in result", json)
-                        }
-                        else {
-                            if(ok.length() <= 0) {
-                                showResult("Cannot parse", json)
-                            } else {
-                                showResult(getDateTimeFromUnixTimeStamp(ok[0].toString()), json)
-                            }
-                        }
-                    }
-                }
-            },
-            Response.ErrorListener {error ->
-                val json = JSONObject()
-                json.put("error", error.toString())
-                showResult("Error", json)
-            })
+            Response.Listener<JSONObject> { json -> parseResponse(json) },
+            Response.ErrorListener { error -> parseError(error) })
 
         queue.add(stringRequest);
+    }
+
+    private fun parseResponse(json: JSONObject) {
+        val result = json.optJSONObject("result")
+        if(result == null) {
+            showResult("Wrong response from server, no result", json)
+            return
+        }
+        val error = result.optJSONObject("Err")
+        if(error != null) {
+            showResult("Parser error, invalid input data", json)
+            return
+        }
+        val ok = result.optJSONArray("Ok");
+        if(ok == null) {
+            showResult("Wrong response from server, neither Ok or Err in result", json)
+            return
+        }
+        if(ok.length() <= 0) {
+            showResult("Cannot parse", json)
+            return
+        }
+        showResult(getDateTimeFromUnixTimeStamp(ok[0].toString()), json)
+    }
+
+    private fun parseError(error: VolleyError) {
+        val json = JSONObject()
+        json.put("error", error.toString())
+        showResult("Error", json)
     }
 
     private fun showResult(dateTime: String, json: JSONObject?) {
